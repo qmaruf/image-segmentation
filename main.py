@@ -10,6 +10,8 @@ from torchvision import transforms as tvt
 import torch
 import torch.nn as nn
 import cv2
+
+
 op_sigmoid = nn.Sigmoid()
 
 parser = argparse.ArgumentParser(description='Description of your program')
@@ -21,7 +23,7 @@ print (args)
 setproctitle.setproctitle('__maruf__')
 
 checkpoint_callback = ModelCheckpoint(
-    filepath=os.getcwd(),
+    filepath='./checkpoints/',
     save_top_k=1,
     verbose=True,
     monitor='val_loss',
@@ -60,8 +62,10 @@ def run():
     trainer = pl.Trainer(max_epochs=config.MAX_EPOCHS,
                         gpus=config.GPUS, 
                         check_val_every_n_epoch=config.CHECK_VAL_EVERY_N_EPOCHS,
-                        auto_lr_find=False,
-                        callbacks=[early_stop_callback, checkpoint_callback])    
+                        auto_lr_find=True,
+                        callbacks=[early_stop_callback, checkpoint_callback],
+                        resume_from_checkpoint=config.RESUME_FROM_CHECKPOINT)    
+    # trainer.tune(model)
     trainer.fit(model)
 
 if __name__ == '__main__':
