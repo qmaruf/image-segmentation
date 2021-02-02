@@ -15,24 +15,18 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-
 class SegmentationDataset(Dataset):
 	def __init__(self, images, masks, training):
 		self.images = images
 		self.masks = masks  
 		self.training = training
-		# self.transforms_img = tvt.Compose([        
-		#     tvt.ToTensor(),
-		#     tvt.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])   
-		# self.transforms_lbl = tvt.Compose([        
-		#     tvt.ToTensor()])   
 		
 		
-		self.semantic_aug = A.Compose([    
-			A.HorizontalFlip(p=0.5),		
+		self.semantic_aug_train = A.Compose([    
+            A.CenterCrop(height=config.IMG_HEIGHT//2, width=config.IMG_WIDTH//2),
+            A.HorizontalFlip(p=0.5),		
 		])
-		self.train_aug = A.Compose([
-			A.HorizontalFlip(p=0.5),
+		self.train_aug = A.Compose([			            
 			A.OneOf([
 				A.IAAAdditiveGaussianNoise(),
 				A.GaussNoise(),
@@ -46,9 +40,11 @@ class SegmentationDataset(Dataset):
 				A.HueSaturationValue()
 			]),
 			A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))        
+		])		
+		self.semantic_aug_eval = A.Compose([    
+            A.CenterCrop(height=config.IMG_HEIGHT//2, width=config.IMG_WIDTH//2)
 		])
-		
-		self.eval_aug = A.Compose([
+		self.eval_aug = A.Compose([			
 			A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))        
 		])
 		
@@ -67,10 +63,12 @@ class SegmentationDataset(Dataset):
 		sample['original_image'] = self.to_tensor(image=image)['image']
 	
 		if self.training:
-			augmented = self.semantic_aug(image=image, mask=mask)
+			augmented = self.semantic_aug_train(image=image, mask=mask)
 			image, mask = augmented['image'], augmented['mask']
 			image = self.train_aug(image=image)['image']    	
 		else:
+			augmented = self.semantic_aug_eval(image=image, mask=mask)
+			image, mask = augmented['image'], augmented['mask']
 			image = self.eval_aug(image=image)['image']    
 		
 		image = self.to_tensor(image=image)['image']			
@@ -88,7 +86,7 @@ def create_data_loader(images, masks, batch_size, training):
 def read_data():    
 	masks = glob(config.LABELS_DIR + '*.png')
 	if config.SAMPLE:
-		masks = masks[:10]
+		masks = masks[:64]
 	images = [config.IMGS_DIR + Path(mask).stem.split('_')[0] + '.jpg' for mask in masks]
 	images_train, images_test, masks_train, masks_test = train_test_split(images, masks, test_size=0.1,random_state=config.RANDOM_SEED)
 	images_train, images_val, masks_train, masks_val = train_test_split(images_train, masks_train, test_size=0.2,random_state=config.RANDOM_SEED)
