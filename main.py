@@ -28,7 +28,7 @@ checkpoint_callback = ModelCheckpoint(
     verbose=True,
     monitor='val_loss',
     mode='min',
-    prefix=''
+    prefix=config.DATASET
 )
 
 early_stop_callback = EarlyStopping(

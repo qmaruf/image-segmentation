@@ -66,6 +66,7 @@ class SemanticSegmentationModel(pl.LightningModule):
 		'''
 		pred_segm = mask_pred[:, 0, :, :].unsqueeze(1)
 		pred_fail = mask_pred[:, 1, :, :].unsqueeze(1)
+		# print (pred_segm.size(), mask_true.size())
 		diceloss = self.diceloss(pred_segm, mask_true)
 
 		pred_segm = self.sigmoid(pred_segm)
